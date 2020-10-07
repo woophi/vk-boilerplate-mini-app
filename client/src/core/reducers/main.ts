@@ -1,21 +1,18 @@
 import * as models from 'core/models';
-import {
-  FetchingStatus,
-  ClientTheme,
-} from 'core/models';
+import { FetchingStatus, ClientTheme } from 'core/models';
 
 const hashValue = window.location.hash ? Number(window.location.hash.split('#').pop()) : null;
 
 export const initialState: models.AppState['ui'] = {
   theme: ClientTheme.Light,
+  errorsQueue: [],
   fetchingDatas: {},
   notifications: false,
-  appId: 7511650,
   hash: !hashValue || isNaN(hashValue) ? null : hashValue,
   online: true,
   initialQuery: '',
   isAppUser: true,
-  onlineHandleActivate: true
+  snackVisible: false,
 };
 
 export const reducer = (
@@ -23,7 +20,6 @@ export const reducer = (
   dispatch: models.AppDispatch
 ): models.AppState['ui'] => {
   switch (dispatch.type) {
-
     case 'SET_THEME': {
       return {
         ...state,
@@ -66,6 +62,12 @@ export const reducer = (
             error: dispatch.payload.error,
           },
         },
+        errorsQueue:
+          state.errorsQueue.includes(dispatch.payload.error) ||
+          (typeof dispatch.payload.error === 'string' &&
+            dispatch.payload.error.includes('Cannot load '))
+            ? state.errorsQueue
+            : [...state.errorsQueue, dispatch.payload.error],
       };
     }
 
@@ -73,12 +75,6 @@ export const reducer = (
       return {
         ...state,
         notifications: dispatch.payload,
-      };
-    }
-    case 'SET_APPID': {
-      return {
-        ...state,
-        appId: dispatch.payload,
       };
     }
     case 'SET_HASH': {
@@ -106,10 +102,33 @@ export const reducer = (
       };
     }
 
-    case 'HANDLE_ACTIVATE_INIT': {
+    case 'ENQUEUE_ERROR': {
       return {
         ...state,
-        onlineHandleActivate: dispatch.payload,
+        errorsQueue: state.errorsQueue.includes(dispatch.payload)
+          ? state.errorsQueue
+          : [...state.errorsQueue, dispatch.payload],
+      };
+    }
+
+    case 'DEQUEUE_ERROR': {
+      return {
+        ...state,
+        errorsQueue: state.errorsQueue.filter((e) => e !== dispatch.payload),
+      };
+    }
+
+    case 'SET_QUEUE_ERROR': {
+      return {
+        ...state,
+        errorsQueue: dispatch.payload,
+      };
+    }
+
+    case 'SET_SNACK': {
+      return {
+        ...state,
+        snackVisible: dispatch.payload,
       };
     }
 

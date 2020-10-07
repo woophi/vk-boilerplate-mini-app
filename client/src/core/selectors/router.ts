@@ -7,14 +7,11 @@ export const getLocationNotificationEnabled = createSelector(
   getStateRouter,
   (router) => Number((router?.location as any).query?.vk_are_notifications_enabled) ?? 0
 );
-export const getLocationVkAppId = createSelector(
+export const getLocationUserId = createSelector(
   getStateRouter,
-  (router) => Number((router?.location as any).query?.vk_app_id) || 7511650
+  (router) => Number((router?.location as any).query?.vk_user_id) || 0
 );
-export const getLocationIsAppUser = createSelector(
-  getStateRouter,
-  (router) => Number((router?.location as any).query?.vk_is_app_user) || 0
-);
+
 
 export const getLocationPathName = createSelector(
   getStateRouter,

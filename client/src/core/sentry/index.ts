@@ -2,9 +2,12 @@ import * as sentry from '@sentry/browser';
 import { Severity, User } from '@sentry/types';
 import { store } from 'core/store';
 import { UserInfo } from '@vkontakte/vk-bridge';
-import { appV } from 'core/models';
+import { appV, isDev } from 'core/models';
 
 export const captureUrlEvent = (message: string, request: sentry.Request = {}) => {
+  if (isDev) {
+    console.error(message);
+  }
   sentry.captureEvent({
     message,
     request,

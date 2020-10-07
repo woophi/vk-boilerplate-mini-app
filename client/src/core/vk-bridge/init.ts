@@ -28,6 +28,21 @@ vkBridge.subscribe(({ detail: { type, data } }) => {
       type: 'SET_HASH',
       payload: !hashValue || isNaN(hashValue) ? null : hashValue,
     });
+
+    if (window.navigator.onLine) {
+      store.dispatch({ type: 'SET_APP_CONNECT', payload: true });
+    }
+  }
+
+  if (type === 'VKWebAppViewHide') {
+    store.dispatch({
+      type: 'SET_QUEUE_ERROR',
+      payload: [],
+    });
+    store.dispatch({
+      type: 'SET_SNACK',
+      payload: false,
+    });
   }
 });
 

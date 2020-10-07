@@ -1,5 +1,6 @@
 import 'core-js/features/map';
 import 'core-js/features/set';
+import 'core-js/features/object';
 import 'whatwg-fetch';
 import 'abortcontroller-polyfill/dist/polyfill-patch-fetch';
 import 'promise-polyfill/src/polyfill';
@@ -11,8 +12,9 @@ import { store, history } from 'core/store';
 import { RendererProvider as Fela } from 'react-fela';
 import { ConnectedRouter } from 'connected-react-router';
 import { configureFela } from 'core/fela';
-import '@vkontakte/vkui/dist/vkui.css';
 import 'core/vk-bridge/init';
+import '@vkontakte/vkui/dist/vkui.css';
+// import 'core/fire-callbacks';
 import 'core/global-listen';
 import 'assets/css/theme.css';
 

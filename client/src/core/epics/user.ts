@@ -1,13 +1,14 @@
-import { ofType } from 'redux-observable';
-import { AppDispatch, FetchingStateName, appUserStorageKey, AppUser, AppEpic } from 'core/models';
-import { filter, switchMap, mergeMap } from 'rxjs/operators';
-import { from } from 'rxjs';
-import { getUserData, getIsAppUserFromStorage } from 'core/vk-bridge/user';
 import { UserInfo } from '@vkontakte/vk-bridge';
 import { getHash, getSearch } from 'connected-react-router';
-import { captureFetchError, captureErrorFallbackActions } from './errors';
-import { getLocationNotificationEnabled, getLocationVkAppId } from 'core/selectors/router';
+import { AppDispatch, AppEpic, AppUser, FetchingStateName, Skeys } from 'core/models';
+import { getLocationNotificationEnabled } from 'core/selectors/router';
+import { getUserData, getUserStorageKeys } from 'core/vk-bridge/user';
+import { ofType } from 'redux-observable';
+import { from } from 'rxjs';
+import { filter, mergeMap, switchMap } from 'rxjs/operators';
+import { devTimeout } from './addons';
 import { safeCombineEpics } from './combine';
+import { captureFetchErrorMoreActions } from './errors';
 
 const getUserInfo: AppEpic = (action$, state$) =>
   action$.pipe(
@@ -15,6 +16,7 @@ const getUserInfo: AppEpic = (action$, state$) =>
     filter(({ payload }) => payload === FetchingStateName.User),
     switchMap(() =>
       from(getUserData()).pipe(
+        devTimeout(),
         mergeMap((userInfo: UserInfo) => {
           return [
             {
@@ -23,30 +25,45 @@ const getUserInfo: AppEpic = (action$, state$) =>
                 name: FetchingStateName.User,
                 data: userInfo,
               },
-            }
+            },
+            {
+              type: 'SET_UPDATING_DATA',
+              payload: FetchingStateName.AddToHomeInfo,
+            },
           ] as AppDispatch[];
         }),
-        captureFetchError(FetchingStateName.User)
+        captureFetchErrorMoreActions(FetchingStateName.User, {
+          type: 'SET_UPDATING_DATA',
+          payload: FetchingStateName.AddToHomeInfo,
+        })
       )
     )
   );
 
-const getIsAppUser: AppEpic = (action$, state$) =>
+const getUserSKeysEpic: AppEpic = (action$, state$) =>
   action$.pipe(
     ofType('SET_UPDATING_DATA'),
-    filter(({ payload }) => payload === FetchingStateName.User),
+    filter(({ payload }) => payload === FetchingStateName.UserSKeys),
     switchMap(() =>
-      from(getIsAppUserFromStorage()).pipe(
+      from(getUserStorageKeys([Skeys.appUser])).pipe(
+        devTimeout(),
         mergeMap((result) => {
-          const appUserKey = result.keys.find((v) => v.key === appUserStorageKey);
+          const isAppUser = result.keys.find((v) => v.key === Skeys.appUser)?.value === AppUser.Yes;
           return [
             {
               type: 'SET_APP_USER',
-              payload: appUserKey?.value === AppUser.Yes,
+              payload: isAppUser,
+            },
+            {
+              type: 'SET_READY_DATA',
+              payload: {
+                name: FetchingStateName.UserSKeys,
+                data: undefined,
+              },
             },
           ] as AppDispatch[];
         }),
-        captureErrorFallbackActions('getIsAppUser', {
+        captureFetchErrorMoreActions(FetchingStateName.UserSKeys, {
           type: 'SET_APP_USER',
           payload: false,
         })
@@ -62,19 +79,15 @@ const setInitInfo: AppEpic = (action$, state$) =>
       const state = state$.value;
       const hash = getHash(state$.value);
       const q = getSearch(state$.value);
-      const hashValue = hash ? Number(hash.split('#').pop()) : null;
+      const hashListGUID = hash ? hash.split('#').pop() : null;
       const actions: AppDispatch[] = [
         {
           type: 'SET_NOTIFICATIONS',
           payload: !!getLocationNotificationEnabled(state),
         },
         {
-          type: 'SET_APPID',
-          payload: getLocationVkAppId(state),
-        },
-        {
           type: 'SET_HASH',
-          payload: !hashValue || isNaN(hashValue) ? null : hashValue,
+          payload: hashListGUID ?? null,
         },
       ];
 
@@ -88,4 +101,4 @@ const setInitInfo: AppEpic = (action$, state$) =>
     })
   );
 
-export const userEpics = safeCombineEpics(getUserInfo, getIsAppUser, setInitInfo);
+export const userEpics = safeCombineEpics(getUserInfo, getUserSKeysEpic, setInitInfo);
