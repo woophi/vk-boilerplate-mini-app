@@ -5,7 +5,7 @@
   "main": "index.js",
   "proxy": "http://localhost:3000",
   "scripts": {
-    "start": "cross-env PORT=10888 react-scripts start",
+    "start": "yarn && cross-env PORT=10888 react-scripts start",
     "build": "react-scripts build && rm -rf ../server/public && mv build ../server/public",
     "predeploy": "yarn build",
     "deploy": "vk-miniapps-deploy"
